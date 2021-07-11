@@ -1,12 +1,11 @@
 package de.kwerber.persistlib.benchmarks.insert;
 
-import de.kwerber.persistlib.Person;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
-import java.sql.PreparedStatement;
 
 public class InsertBench {
 
@@ -14,27 +13,26 @@ public class InsertBench {
 
 	@Benchmark
 	@BenchmarkMode(Mode.All)
-	public void testPersistence(InsertBenchState state) {
+	public void testPersistLib(InsertBenchState state) {
 		state.storage.insert(state.personToInsert);
 	}
 
 	@Benchmark
 	@BenchmarkMode(Mode.All)
-	public void testJDBC(InsertBenchState state) throws Exception {
-		String sql = "INSERT INTO `" + InsertBenchState.TABLE_NAME + "` " +
+	public void testJDBC(InsertBenchState state, Blackhole blackhole) {
+		String sql = "INSERT INTO `" + state.tableName + "` " +
 			"(`id`, `name`, `age`, `alive`) " +
 			"VALUES (?, ?, ?, ?);";
 
-		Person person = state.personToInsert;
+		Object[] params = new Object[4];
+		params[0] = state.personToInsert.getId().toString();
+		params[1] = state.personToInsert.getName();
+		params[2] = state.personToInsert.getAge();
+		params[3] = state.personToInsert.isAlive();
 
-		try (PreparedStatement statement = state.connection.prepareStatement(sql)) {
-			statement.setString(1, person.getId().toString());
-			statement.setString(2, person.getName());
-			statement.setInt(3, person.getAge());
-			statement.setBoolean(4, person.isAlive());
-
-			statement.executeUpdate();
-		}
+		// Imagine doing the database insert here
+		blackhole.consume(params);
+		blackhole.consume(sql);
 	}
 
 }

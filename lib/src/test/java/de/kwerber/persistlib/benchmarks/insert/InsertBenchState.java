@@ -3,66 +3,74 @@ package de.kwerber.persistlib.benchmarks.insert;
 import de.kwerber.persistlib.PersistentStorage;
 import de.kwerber.persistlib.Person;
 import de.kwerber.persistlib.PersonId;
-import de.kwerber.persistlib.executor.jdbc.JdbcExecutor;
+import de.kwerber.persistlib.exception.QueryExecuteException;
+import de.kwerber.persistlib.executor.QueryExecutor;
+import de.kwerber.persistlib.query.ParameterizedQuery;
 import de.kwerber.persistlib.type.CommonMapper;
 import de.kwerber.persistlib.type.TypeMappers;
-import de.kwerber.persistlib.util.EmbeddedDB;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.infra.Blackhole;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.ResultSet;
 import java.util.List;
-import java.util.Random;
 
 @State(Scope.Benchmark)
 public class InsertBenchState {
 
-	public static final int DB_PORT = 3306;
-	public static final String DB_NAME = "testdb";
-	public static final String TABLE_NAME = "bench_person";
+	// 1 Benchmark contains?: Forks
+	// 1 Fork = Trial contains: Warmups & Iterations
+	// 1 Warmup Phase contains: Warmup Iterations
+	// 1 Invocation contains: Operations
 
-	public Person personToInsert;
-	public EmbeddedDB db;
-	public Connection connection;
-	public PersistentStorage<Person, PersonId> storage;
+	// Number of Forks configured by: @Fork
+	// Number of warmup iterations configured by: @Warmup
+	// Number of iterations configured by: @Measurement
+	// Number of operations per iteration configured by: @OperationsPerInvocation
 
-	@Setup(Level.Invocation)
-	public void setUpInvocation() {
-		Random random = new Random();
+	record NoOpExecutor(Blackhole blackhole) implements QueryExecutor {
+		@Override
+		public void execute(ParameterizedQuery query) throws QueryExecuteException {
+			this.blackhole.consume(query);
+		}
 
-		this.personToInsert = new Person(
-			"Hans".repeat(random.nextInt(10) + 1),
-			random.nextInt(100),
-			random.nextBoolean()
-		);
+		@Override
+		public Object executeAndReturnKey(ParameterizedQuery query) throws QueryExecuteException {
+			this.blackhole.consume(query);
+			return null;
+		}
+
+		@Override
+		public ResultSet executeAndReturnResult(ParameterizedQuery query) throws QueryExecuteException {
+			this.blackhole.consume(query);
+			return null;
+		}
 	}
 
-	@Setup(Level.Trial)
-	public void setUpTrial() throws Exception {
-		this.db = new EmbeddedDB(DB_PORT, DB_NAME);
+	public final String tableName = "person_bench_table";
+	public Person personToInsert;
+	public PersistentStorage<Person, PersonId> storage;
 
-		this.connection = this.db.getConnection();
+	@Setup(Level.Trial)
+	public void setUp(Blackhole blackhole) {
+		NoOpExecutor executor = new NoOpExecutor(blackhole);
 
 		this.storage = PersistentStorage.builder(Person.class, PersonId.class)
-			.tableName(TABLE_NAME)
-			.executor(new JdbcExecutor(db, false))
-			.createTableIfNotExists(true)
+			.tableName(tableName)
+			.executor(executor)
 			.typeMappers(List.of(
 				TypeMappers.toAndFromString(PersonId.class, 36, PersonId::new),
 				new CommonMapper()
 			))
 			.build();
 
-		try (Statement statement = this.connection.createStatement()){
-			statement.executeUpdate("DELETE FROM " + TABLE_NAME);
-		}
-	}
-
-	@TearDown(Level.Trial)
-	public void tearDownTrial() {
-		try { this.connection.close(); } catch (SQLException ignore) { }
-		try { this.db.shutdown(); } catch (Exception ignore) { }
+		this.personToInsert = new Person(
+			"Hans",
+			10,
+			true
+		);
 	}
 
 }
