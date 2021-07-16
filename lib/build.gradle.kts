@@ -1,7 +1,9 @@
 plugins {
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
+    `maven-publish`
     id("me.champeau.jmh") version "0.6.5"
+    id("de.kwerber.ghpub") version "0.3"
 }
 
 repositories {
@@ -40,5 +42,24 @@ tasks.test {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(16))
+    }
+}
+
+githubPublish {
+    committerName.set("kwerber")
+    committerEmail.set("werberkevin@gmail.com")
+    githubRepoUrl.set(uri("https://github.com/kwerber/maven_repo"))
+    githubRepoBranch.set("test")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "de.kwerber"
+            artifactId = "persistlib"
+            version = "0.3"
+
+            from(components["java"])
+        }
     }
 }

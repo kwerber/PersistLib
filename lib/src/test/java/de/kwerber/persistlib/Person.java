@@ -6,7 +6,7 @@ import java.util.Objects;
 public class Person {
 
 	@Id
-	private PersonId id;
+	private final PersonId id;
 	private String name;
 	private int age;
 	private boolean alive;

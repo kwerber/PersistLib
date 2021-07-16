@@ -12,15 +12,17 @@ import java.util.Arrays;
 public class JdbcExecutor implements QueryExecutor {
 
 	private final ConnectionProvider provider;
+	private final boolean closeConnectionAfterUse;
 	private final boolean debug;
 
-	public JdbcExecutor(ConnectionProvider provider) {
-		this(provider, true);
+	public JdbcExecutor(ConnectionProvider provider, boolean closeConnectionAfterUse) {
+		this(provider, closeConnectionAfterUse, true);
 	}
 
-	public JdbcExecutor(ConnectionProvider provider, boolean debug) {
+	public JdbcExecutor(ConnectionProvider provider, boolean closeConnectionAfterUse, boolean debug) {
 		Check.notNull(provider);
 		this.provider = provider;
+		this.closeConnectionAfterUse = closeConnectionAfterUse;
 		this.debug = debug;
 	}
 
@@ -36,18 +38,23 @@ public class JdbcExecutor implements QueryExecutor {
 				System.out.println("EXECUTE: " + sql + " " + Arrays.toString(params));
 			}
 
-			try (Connection connection = provider.getConnection()) {
+			Connection connection = provider.getConnection();
+
+			try {
 				if (query.hasParameters()) {
-					PreparedStatement statement = connection.prepareStatement(sql);
-
-					applyParams(statement, params);
-
-					statement.executeUpdate();
+					try (PreparedStatement statement = connection.prepareStatement(sql)) {
+						applyParams(statement, params);
+						statement.executeUpdate();
+					}
 				}
 				else {
-					Statement statement = connection.createStatement();
-					statement.executeUpdate(sql);
+					try (Statement statement = connection.createStatement()) {
+						statement.executeUpdate(sql);
+					}
 				}
+			}
+			finally {
+				if (closeConnectionAfterUse) { connection.close(); }
 			}
 		}
 		catch (SQLException e) {
@@ -65,7 +72,9 @@ public class JdbcExecutor implements QueryExecutor {
 
 			if (debug) {  System.out.println("EXECUTE: " + sql + " " + Arrays.toString(params)); };
 
-			try (Connection connection = provider.getConnection()) {
+			Connection connection = provider.getConnection();
+
+			try {
 				try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 					applyParams(statement, params);
 
@@ -80,6 +89,9 @@ public class JdbcExecutor implements QueryExecutor {
 						throw new QueryExecuteException("no primary key for: " + sql);
 					}
 				}
+			}
+			finally {
+				if (closeConnectionAfterUse) { connection.close(); }
 			}
 		}
 		catch (SQLException e) {
@@ -97,7 +109,9 @@ public class JdbcExecutor implements QueryExecutor {
 
 			if (debug) {  System.out.println("QUERY: " + sql + " " + Arrays.toString(params)); };
 
-			try (Connection connection = provider.getConnection()) {
+			Connection connection = provider.getConnection();
+
+			try {
 				if (query.hasParameters()) {
 					try (PreparedStatement statement = connection.prepareStatement(sql)) {
 						applyParams(statement, params);
@@ -110,9 +124,10 @@ public class JdbcExecutor implements QueryExecutor {
 						return statement.executeQuery(sql);
 					}
 				}
-
 			}
-
+			finally {
+				if (closeConnectionAfterUse) { connection.close(); }
+			}
 		}
 		catch (SQLException e) {
 			throw new QueryExecuteException(e);

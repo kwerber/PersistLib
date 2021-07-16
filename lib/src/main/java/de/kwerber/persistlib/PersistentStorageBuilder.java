@@ -40,14 +40,13 @@ public class PersistentStorageBuilder<T, Id> {
 		return this;
 	}
 
-	public PersistentStorageBuilder<T, Id> connection(ConnectionProvider connectionProvider) {
-		this.executor = new JdbcExecutor(connectionProvider);
+	public PersistentStorageBuilder<T, Id> connection(ConnectionProvider connectionProvider, boolean closeConnectionAfterUse) {
+		this.executor = new JdbcExecutor(connectionProvider, closeConnectionAfterUse);
 		return this;
 	}
 
 	public PersistentStorageBuilder<T, Id> connection(Connection connection) {
-		this.executor = new JdbcExecutor(() -> connection);
-		return this;
+		return connection(() -> connection, false);
 	}
 
 	public PersistentStorageBuilder<T, Id> executor(QueryExecutor executor) {
