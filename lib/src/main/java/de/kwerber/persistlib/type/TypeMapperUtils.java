@@ -7,11 +7,8 @@ import javax.persistence.Id;
 
 public class TypeMapperUtils {
 
-
 	public static String handleNullable(PersistentAttribute attribute) {
-		Column column = attribute.getColumnData().orElse(null);
-
-		if (column != null && column.nullable()) {
+		if (attribute.isNullable()) {
 			return " NULL";
 		}
 		else {

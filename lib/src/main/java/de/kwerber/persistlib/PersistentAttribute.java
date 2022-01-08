@@ -1,7 +1,6 @@
 package de.kwerber.persistlib;
 
 import de.kwerber.persistlib.util.Check;
-import de.kwerber.persistlib.util.Utils;
 
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
@@ -67,8 +66,13 @@ public class PersistentAttribute {
 	public boolean isAutoIncremented() { return autoIncremented; }
 
 	public boolean isNullable() {
+		if (columnData.isPresent()) {
+			Column column = columnData.get();
+			return column.nullable();
+		}
+
 		return false;
-	} // TODO
+	}
 
 	@Override
 	public boolean equals(Object o) {
