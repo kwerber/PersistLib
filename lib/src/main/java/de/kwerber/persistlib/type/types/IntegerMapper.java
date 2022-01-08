@@ -32,16 +32,16 @@ public class IntegerMapper implements TypeMapper {
 
 		// TYPE
 		if (type.equals(byte.class) || type.equals(Byte.class)) {
-			sql = " TINYINT UNSIGNED";
+			sql = "TINYINT UNSIGNED";
 		}
 		else if (type.equals(short.class) || type.equals(Short.class)) {
-			sql += " SMALLINT";
+			sql += "SMALLINT";
 		}
 		else if (type.equals(int.class) || type.equals(Integer.class)) {
-			sql += " INTEGER";
+			sql += "INTEGER";
 		}
 		else if (type.equals(long.class) || type.equals(Long.class)) {
-			sql += " BIGINT";
+			sql += "BIGINT";
 		}
 
 		// NULLABLE
