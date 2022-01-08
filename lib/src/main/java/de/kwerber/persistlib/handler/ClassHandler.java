@@ -2,8 +2,10 @@ package de.kwerber.persistlib.handler;
 
 import de.kwerber.persistlib.PersistentAttribute;
 
+import javax.persistence.Table;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface ClassHandler<T, Id> {
 
@@ -18,5 +20,7 @@ public interface ClassHandler<T, Id> {
 	void setPrimaryValue(T instance, Id id);
 
 	T createInstance(Map<String, Object> attributeValues);
+
+	Optional<Table> getTableData();
 
 }

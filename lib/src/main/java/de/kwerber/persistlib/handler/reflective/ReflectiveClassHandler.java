@@ -6,15 +6,13 @@ import de.kwerber.persistlib.handler.ClassHandler;
 import de.kwerber.persistlib.util.Check;
 
 import javax.persistence.Id;
+import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReflectiveClassHandler<T, IdType> implements ClassHandler<T, IdType> {
@@ -140,6 +138,11 @@ public class ReflectiveClassHandler<T, IdType> implements ClassHandler<T, IdType
 		catch (Exception e) {
 			throw new PersistenceReflectionException(e);
 		}
+	}
+
+	@Override
+	public Optional<Table> getTableData() {
+		return Optional.ofNullable(clazz.getAnnotation(Table.class));
 	}
 
 }
