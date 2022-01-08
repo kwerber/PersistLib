@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 
 public class MariadbTranslator<T, Id> implements SQLTranslator<T, Id> {
 
+	private static final Object[] EMPTY_ARRAY = new Object[0];
+
 	@Override
 	public ParameterizedQuery getInsertQuery(PersistenceContext<T, Id> ctx, T instance) {
 		Check.notNull(ctx);
@@ -117,24 +119,33 @@ public class MariadbTranslator<T, Id> implements SQLTranslator<T, Id> {
 		Check.notNull(query);
 		Check.notNullNotEmpty(column);
 
-		Object[] args = query.getWhereClause().getArgs();
-		Object[] params = new Object[args.length];
-		TypeMapper typeMapper = ctx.getTypeMapper();
+		String sql = "SELECT " + column + " FROM `<table_name>`"
+			.replace("<table_name>", ctx.getTableName());
 
-		for (int i = 0; i < params.length; i++) {
-			if (args[i] == null) { continue; }
+		Object[] params;
 
-			if (typeMapper.applies(args[i].getClass())) {
-				params[i] = typeMapper.serialize(args[i]);
+		if (query.getWhereClause().isPresent()) {
+			Object[] args = query.getWhereClause().get().getArgs();
+			params = new Object[args.length];
+
+			TypeMapper typeMapper = ctx.getTypeMapper();
+
+			for (int i = 0; i < params.length; i++) {
+				if (args[i] == null) { continue; }
+
+				if (typeMapper.applies(args[i].getClass())) {
+					params[i] = typeMapper.serialize(args[i]);
+				}
+				else {
+					throw new SerializeException("Cannot serialize param " + i + ": " + params[i].getClass() + " (" + params[i] + ")");
+				}
 			}
-			else {
-				throw new SerializeException("Cannot serialize param " + i + ": " + params[i].getClass() + " (" + params[i] + ")");
-			}
+
+			sql += " WHERE " + query.getWhereClause().get().getClause();
 		}
-
-		String sql = "SELECT " + column + " FROM `<table_name>` WHERE <where>"
-			.replace("<table_name>", ctx.getTableName())
-			.replace("<where>", query.getWhereClause().getClause());
+		else {
+			params = EMPTY_ARRAY;
+		}
 
 		if (query.getOrderByClause().isPresent()) {
 			OrderByClause clause = query.getOrderByClause().get();

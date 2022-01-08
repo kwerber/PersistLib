@@ -13,7 +13,7 @@ public class PersistenceSelect<T, Id> implements Iterable<T> {
 
 	private final PersistenceContext<T, Id> ctx;
 
-	private WhereClause whereClause;
+	private Optional<WhereClause> whereClause = Optional.empty();
 	private Optional<Integer> limit = Optional.empty();
 	private Optional<OrderByClause> orderBy = Optional.empty();
 
@@ -26,7 +26,7 @@ public class PersistenceSelect<T, Id> implements Iterable<T> {
 		return this.ctx.getTranslator().getSelectQuery(this.ctx, this);
 	}
 
-	public WhereClause getWhereClause() {
+	public Optional<WhereClause> getWhereClause() {
 		return this.whereClause;
 	}
 
@@ -37,7 +37,7 @@ public class PersistenceSelect<T, Id> implements Iterable<T> {
 	public Optional<OrderByClause> getOrderByClause() { return this.orderBy; }
 
 	public PersistenceSelect<T, Id> where(String clause, Object... args) {
-		this.whereClause = new WhereClause(clause, args);
+		this.whereClause = Optional.of(new WhereClause(clause, args));
 		return this;
 	}
 
